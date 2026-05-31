@@ -1,166 +1,127 @@
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
-import { router } from 'expo-router';
-import { Colors, Spacing, Radius, Font } from '../../constants/theme';
+import { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  StyleSheet,
+} from "react-native";
+import { useAuth } from "../context/AuthContext";
 
-const { width, height } = Dimensions.get('window');
+export default function AuthScreen() {
+  const { signIn, signUp } = useAuth();
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [phone, setPhone] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-export default function LoginScreen() {
+  async function handleSubmit() {
+    setError("");
+    setLoading(true);
+    try {
+      if (mode === "signup") {
+        await signUp(phone, fullName, password);
+      } else {
+        await signIn(phone, password);
+      }
+    } catch (e: any) {
+      setError(e.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <View style={styles.container}>
-      {/* Background orbs */}
-      <View style={styles.orbTop} />
-      <View style={styles.orbBottom} />
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>StablePay</Text>
+      <Text style={styles.subtitle}>
+        {mode === "signin" ? "Sign in to your account" : "Create your account"}
+      </Text>
 
-      {/* Content */}
-      <View style={styles.content}>
-        {/* Logo mark */}
-        <View style={styles.logoWrapper}>
-          <View style={styles.logoRing}>
-            <View style={styles.logoDot} />
-          </View>
-        </View>
+      {mode === "signup" && (
+        <TextInput
+          style={styles.input}
+          placeholder="Full name"
+          placeholderTextColor="#888"
+          value={fullName}
+          onChangeText={setFullName}
+          autoCapitalize="words"
+        />
+      )}
 
-        {/* Headline */}
-        <Text style={styles.headline}>StablePay</Text>
-        <Text style={styles.tagline}>Your money, stable & borderless.</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Phone number"
+        placeholderTextColor="#888"
+        value={phone}
+        onChangeText={setPhone}
+        keyboardType="phone-pad"
+        autoComplete="tel"
+      />
 
-        {/* Stablecoin badges */}
-        <View style={styles.badges}>
-          {['USDC', 'USDT', 'DAI'].map((coin) => (
-            <View key={coin} style={styles.badge}>
-              <Text style={styles.badgeText}>{coin}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        placeholderTextColor="#888"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+      />
 
-      {/* Bottom CTAs */}
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={styles.btnPrimary}
-          onPress={() => router.replace('/(tabs)')}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.btnPrimaryText}>Get Started</Text>
-        </TouchableOpacity>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <TouchableOpacity
-          style={styles.btnSecondary}
-          onPress={() => router.replace('/(tabs)')}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.btnSecondaryText}>I already have an account</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      <TouchableOpacity
+        style={[styles.button, loading && styles.buttonDisabled]}
+        onPress={handleSubmit}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>
+            {mode === "signup" ? "Create Account" : "Sign In"}
+          </Text>
+        )}
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(""); }}>
+        <Text style={styles.toggle}>
+          {mode === "signin"
+            ? "Don't have an account? Sign up"
+            : "Already have an account? Sign in"}
+        </Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    paddingHorizontal: Spacing.lg,
-  },
-  orbTop: {
-    position: 'absolute',
-    top: -80,
-    right: -60,
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: Colors.accent,
-    opacity: 0.08,
-  },
-  orbBottom: {
-    position: 'absolute',
-    bottom: 100,
-    left: -80,
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: Colors.accentSecondary,
-    opacity: 0.08,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoWrapper: {
-    marginBottom: Spacing.xl,
-  },
-  logoRing: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 2,
-    borderColor: Colors.accent,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoDot: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.accent,
-  },
-  headline: {
-    fontSize: 42,
-    fontWeight: Font.black,
-    color: Colors.textPrimary,
-    letterSpacing: -1.5,
-    marginBottom: Spacing.sm,
-  },
-  tagline: {
-    fontSize: 16,
-    fontWeight: Font.regular,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: Spacing.xl,
-    lineHeight: 24,
-  },
-  badges: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  badge: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs + 2,
-    borderRadius: Radius.full,
+  container: { flexGrow: 1, justifyContent: "center", padding: 24, backgroundColor: "#080810" },
+  title: { fontSize: 32, fontWeight: "700", color: "#fff", marginBottom: 8 },
+  subtitle: { fontSize: 16, color: "#888", marginBottom: 32 },
+  input: {
     borderWidth: 1,
-    borderColor: Colors.cardBorder,
-    backgroundColor: Colors.card,
-  },
-  badgeText: {
-    color: Colors.accent,
-    fontSize: 12,
-    fontWeight: Font.semibold,
-    letterSpacing: 0.5,
-  },
-  actions: {
-    paddingBottom: 48,
-    gap: Spacing.md,
-  },
-  btnPrimary: {
-    backgroundColor: Colors.accent,
-    paddingVertical: 18,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-  },
-  btnPrimaryText: {
-    color: Colors.background,
+    borderColor: "#2A2A45",
+    borderRadius: 8,
+    padding: 14,
+    color: "#fff",
+    backgroundColor: "#1A1A2E",
+    marginBottom: 12,
     fontSize: 16,
-    fontWeight: Font.bold,
-    letterSpacing: 0.3,
   },
-  btnSecondary: {
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
+  error: { color: "#ff4444", marginBottom: 12, fontSize: 14 },
+  button: {
+    backgroundColor: "#00D4AA",
+    borderRadius: 8,
+    padding: 16,
+    alignItems: "center",
+    marginBottom: 16,
   },
-  btnSecondaryText: {
-    color: Colors.textSecondary,
-    fontSize: 15,
-    fontWeight: Font.medium,
-  },
+  buttonDisabled: { opacity: 0.6 },
+  buttonText: { color: "#080810", fontWeight: "700", fontSize: 16 },
+  toggle: { color: "#00D4AA", textAlign: "center", fontSize: 14 },
 });
